@@ -7,15 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="mock-banner">Design mockup: proposed consolidated property page (overview + availability on one page)</div>
   <header class="site-header">
     <div class="inner">
-      <a class="brand" href="/"><b>PAVONE</b><span>Rental Communities</span></a>
+      <a class="brand" href="./"><b>PAVONE</b><span>Rental Communities</span></a>
       <nav class="nav">
-        <a href="/">Find a Home</a>
+        <a href="./">Find a Home</a>
         <a href="#" onclick="return false">About</a>
         <a href="#" onclick="return false">Residents</a>
         <a href="#" onclick="return false">Contact</a>
@@ -29,7 +29,7 @@
   <footer><div class="wrap"><span>© 2026 Pavone Rental Communities · 8104 160 Ave, Edmonton, AB</span><span>780 993 7249 · hello@pavonerentals.com</span></div></footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="/data.js"></script>
+  <script src="data.js"></script>
   <script>
     const last = location.pathname.split("/").filter(Boolean).pop() || "";
     const slug = new URLSearchParams(location.search).get("p") || (last.includes(".") ? "" : last);
@@ -51,7 +51,7 @@
     const others = PROPERTIES.filter((x) => x.slug !== p.slug);
 
     document.getElementById("app").innerHTML = `
-      <div class="crumbs"><a href="/">Find a Home</a> / ${p.typeLabel} / ${p.name}</div>
+      <div class="crumbs"><a href="./">Find a Home</a> / ${p.typeLabel} / ${p.name}</div>
       ${p.placeholder ? `<div class="note"><b>Placeholder listing.</b> This shows how a new single-family rental would look. Address, photos and pricing are sample values.</div>` : ""}
       ${hero}
       <div class="title-row">
@@ -107,7 +107,7 @@
           <section class="block">
             <h2>More Pavone properties</h2>
             <div class="others">${others.map((o) => `
-              <a class="card" href="/properties/${o.slug}">
+              <a class="card" href="property.html?p=${o.slug}">
                 <div class="thumb ${o.hero ? "" : "ph"}" style="${o.hero ? `background-image:url('${o.hero}')` : ""}">${o.hero ? "" : "Coming soon"}</div>
                 <div><span class="badge ${o.status === "Coming Soon" ? "soon" : ""}">${o.status}</span><h3>${o.name}</h3>
                 <div class="price">From ${fmtMoney(o.priceFrom)}/mo</div></div>

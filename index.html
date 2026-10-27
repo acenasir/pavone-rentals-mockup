@@ -7,15 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="mock-banner">Design mockup: proposed new landing page for pavonerentals.com</div>
   <header class="site-header">
     <div class="inner">
-      <a class="brand" href="/"><b>PAVONE</b><span>Rental Communities</span></a>
+      <a class="brand" href="./"><b>PAVONE</b><span>Rental Communities</span></a>
       <nav class="nav">
-        <a href="/">Find a Home</a>
+        <a href="./">Find a Home</a>
         <a href="#" onclick="return false">About</a>
         <a href="#" onclick="return false">Residents</a>
         <a href="#" onclick="return false">Contact</a>
@@ -48,10 +48,10 @@
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="/data.js"></script>
+  <script src="data.js"></script>
   <script>
     const props = window.PROPERTIES;
-    const url = (p) => "/properties/" + p.slug;
+    const url = (p) => "property.html?p=" + p.slug;
     const map = L.map("map", { zoomControl: false, scrollWheelZoom: true }).setView([53.52, -113.52], 12);
     L.control.zoom({ position: "topright" }).addTo(map);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
