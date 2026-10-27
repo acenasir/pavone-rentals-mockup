@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pavone Rentals</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="mock-banner">Design mockup: proposed consolidated property page (overview + availability on one page)</div>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/"><b>PAVONE</b><span>Rental Communities</span></a>
+      <nav class="nav">
+        <a href="/">Find a Home</a>
+        <a href="#" onclick="return false">About</a>
+        <a href="#" onclick="return false">Residents</a>
+        <a href="#" onclick="return false">Contact</a>
+        <a class="btn" href="#tour">Book a Tour</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="app"></main>
+
+  <footer><div class="wrap"><span>© 2026 Pavone Rental Communities · 8104 160 Ave, Edmonton, AB</span><span>780 993 7249 · hello@pavonerentals.com</span></div></footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/data.js"></script>
+  <script>
+    const last = location.pathname.split("/").filter(Boolean).pop() || "";
+    const slug = new URLSearchParams(location.search).get("p") || (last.includes(".") ? "" : last);
+    const p = PROPERTIES.find((x) => x.slug === slug) || PROPERTIES[0];
+    document.title = p.name + " | Pavone Rentals";
+    const ph = (label) => `<div class="ph-img">${label || "Photo coming soon"}</div>`;
+    const heroImgs = [p.hero, ...p.gallery].filter(Boolean).slice(0, 5);
+
+    const hero = heroImgs.length
+      ? `<div class="hero">${heroImgs.map((src) => `<div style="background-image:url('${src}')"></div>`).join("")}</div>`
+      : `<div class="hero single">${ph("Exterior photos coming soon")}</div>`;
+
+    const bedOpts = [...new Set(p.units.map((u) => u.beds))].sort();
+    const unitRows = (beds) => p.units.filter((u) => beds === "all" || u.beds == beds).map((u) => `
+      <tr><td>${u.name}</td><td>${u.beds} bd / ${u.baths} ba</td><td>${u.sqft.toLocaleString()} sq ft</td>
+      <td class="rent">${fmtMoney(u.rent)}/mo</td><td>${u.available}</td>
+      <td><a class="apply" href="#tour" data-unit="${u.name}">Request tour →</a></td></tr>`).join("");
+
+    const others = PROPERTIES.filter((x) => x.slug !== p.slug);
+
+    document.getElementById("app").innerHTML = `
+      <div class="crumbs"><a href="/">Find a Home</a> / ${p.typeLabel} / ${p.name}</div>
+      ${p.placeholder ? `<div class="note"><b>Placeholder listing.</b> This shows how a new single-family rental would look. Address, photos and pricing are sample values.</div>` : ""}
+      ${hero}
+      <div class="title-row">
+        <div>
+          <span class="badge ${p.status === "Coming Soon" ? "soon" : ""}">${p.status}</span>
+          <h1>${p.name}</h1>
+          <div class="addr">${p.address}</div>
+        </div>
+        <a class="btn brass" href="#availability">View availability</a>
+      </div>
+      <div class="facts">
+        <div><small>Rent from</small><b>${fmtMoney(p.priceFrom)}</b></div>
+        <div><small>Bedrooms</small><b>${p.beds}</b></div>
+        <div><small>Bathrooms</small><b>${p.baths}</b></div>
+        <div><small>Size (sq ft)</small><b>${p.sqft}</b></div>
+        <div><small>Move-in</small><b>${p.occupancy}</b></div>
+      </div>
+      <nav class="subnav">
+        <a href="#overview">Overview</a><a href="#availability">Availability</a><a href="#amenities">Amenities</a>
+        <a href="#gallery">Gallery</a><a href="#location">Location</a><a href="#tour">Book a tour</a>
+      </nav>
+      <div class="layout">
+        <div>
+          <section class="block" id="overview">
+            <h2>Overview</h2>
+            <p class="lead">${p.description}</p>
+          </section>
+          ${p.promo ? `<div class="promo"><h3>${p.promo.title}</h3><p>${p.promo.note}</p><ul>${p.promo.items.map((i) => `<li>${i}</li>`).join("")}</ul></div>` : ""}
+          <section class="block" id="availability">
+            <h2>Availability &amp; pricing</h2>
+            ${bedOpts.length > 1 ? `<div class="unit-filter">
+              <button class="chip" data-b="all" aria-pressed="true">All</button>
+              ${bedOpts.map((b) => `<button class="chip" data-b="${b}" aria-pressed="false">${b} bedroom</button>`).join("")}
+            </div>` : ""}
+            <div class="table-wrap"><table class="units">
+              <thead><tr><th>Unit</th><th>Layout</th><th>Size</th><th>Rent</th><th>Available</th><th></th></tr></thead>
+              <tbody id="unit-body">${unitRows("all")}</tbody>
+            </table></div>
+            ${p.docs.length ? `<div class="docs">${p.docs.map((d) => `<a class="btn ghost" href="${d.href}" target="_blank" rel="noopener">${d.label}</a>`).join("")}</div>` : ""}
+          </section>
+          <section class="block" id="amenities">
+            <h2>Features &amp; amenities</h2>
+            <ul class="amen">${p.amenities.map((a) => `<li>${a}</li>`).join("")}</ul>
+          </section>
+          <section class="block" id="gallery">
+            <h2>Gallery</h2>
+            <div class="gallery">${p.gallery.length ? p.gallery.map((g) => `<img src="${g}" alt="" loading="lazy">`).join("") : ph() + ph() + ph()}</div>
+          </section>
+          <section class="block" id="location">
+            <h2>Location</h2>
+            <div id="mini-map"></div>
+          </section>
+          <section class="block">
+            <h2>More Pavone properties</h2>
+            <div class="others">${others.map((o) => `
+              <a class="card" href="/properties/${o.slug}">
+                <div class="thumb ${o.hero ? "" : "ph"}" style="${o.hero ? `background-image:url('${o.hero}')` : ""}">${o.hero ? "" : "Coming soon"}</div>
+                <div><span class="badge ${o.status === "Coming Soon" ? "soon" : ""}">${o.status}</span><h3>${o.name}</h3>
+                <div class="price">From ${fmtMoney(o.priceFrom)}/mo</div></div>
+              </a>`).join("")}</div>
+          </section>
+        </div>
+        <aside class="aside" id="tour">
+          <form class="tour" onsubmit="event.preventDefault(); this.querySelector('.btn').textContent='Request sent ✓ (mockup)';">
+            <div class="from">Rent from <b>${fmtMoney(p.priceFrom)}</b>/mo</div>
+            <h3>Book a tour</h3>
+            <label>Name</label><input required placeholder="Your name">
+            <label>Email</label><input type="email" required placeholder="you@example.com">
+            <label>Interested in</label>
+            <select id="unit-select">${p.units.map((u) => `<option>${u.name}: ${u.beds} bd, ${fmtMoney(u.rent)}/mo</option>`).join("")}</select>
+            <label>Preferred date</label><input type="date">
+            <button class="btn brass" type="submit">Request a tour</button>
+            <div class="contact">or call <b>${CONTACT.phone}</b><br>${CONTACT.email}</div>
+          </form>
+        </aside>
+      </div>`;
+
+    document.querySelectorAll(".unit-filter .chip").forEach((b) => b.addEventListener("click", () => {
+      document.querySelectorAll(".unit-filter .chip").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      document.getElementById("unit-body").innerHTML = unitRows(b.dataset.b);
+    }));
+    document.addEventListener("click", (e) => {
+      const u = e.target.closest("[data-unit]");
+      if (!u) return;
+      const sel = document.getElementById("unit-select");
+      [...sel.options].forEach((o, i) => { if (o.text.startsWith(u.dataset.unit + ":")) sel.selectedIndex = i; });
+    });
+
+    const mm = L.map("mini-map", { scrollWheelZoom: false }).setView([p.lat, p.lng], 14);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap', maxZoom: 19,
+    }).addTo(mm);
+    L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "pin-icon", html: `<div class="pin ${p.type}">${p.name.replace("Pavone ", "")}</div>`, iconSize: [0, 0] }) }).addTo(mm);
+  </script>
+</body>
+</html>

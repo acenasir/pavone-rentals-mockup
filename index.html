@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pavone Rentals | Find Your Home in Edmonton</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="mock-banner">Design mockup: proposed new landing page for pavonerentals.com</div>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/"><b>PAVONE</b><span>Rental Communities</span></a>
+      <nav class="nav">
+        <a href="/">Find a Home</a>
+        <a href="#" onclick="return false">About</a>
+        <a href="#" onclick="return false">Residents</a>
+        <a href="#" onclick="return false">Contact</a>
+        <a class="btn" href="mailto:hello@pavonerentals.com">Book a Tour</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="explore">
+    <aside class="panel">
+      <div class="panel-head">
+        <h1>Find your next home in Edmonton</h1>
+        <p>Brand-new apartments and single-family homes from Pavone. Select a property on the map to see photos, floor plans and availability.</p>
+      </div>
+      <div class="filters" role="group" aria-label="Filter properties">
+        <button class="chip" data-f="all" aria-pressed="true">All</button>
+        <button class="chip" data-f="apartment" aria-pressed="false">Apartments</button>
+        <button class="chip" data-f="house" aria-pressed="false">Houses</button>
+      </div>
+      <div class="count" id="count"></div>
+      <div class="list" id="list"></div>
+    </aside>
+    <div class="map-wrap">
+      <div id="map"></div>
+      <div class="map-legend">
+        <span><i style="background:var(--ink)"></i>Apartments</span>
+        <span><i style="background:var(--sage)"></i>Houses</span>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/data.js"></script>
+  <script>
+    const props = window.PROPERTIES;
+    const url = (p) => "/properties/" + p.slug;
+    const map = L.map("map", { zoomControl: false, scrollWheelZoom: true }).setView([53.52, -113.52], 12);
+    L.control.zoom({ position: "topright" }).addTo(map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    const markers = {};
+    props.forEach((p) => { if (p.hero) new Image().src = p.hero; }); // preload so popups size correctly
+    const imgOrPh = (p, cls) => p.hero
+      ? `<img class="${cls||""}" src="${p.hero}" alt="${p.name}">`
+      : `<div class="ph-img ${cls||""}">Photos coming soon</div>`;
+
+    props.forEach((p) => {
+      const icon = L.divIcon({
+        className: "pin-icon",
+        html: `<div class="pin ${p.type}" data-slug="${p.slug}">${fmtMoney(p.priceFrom)}+</div>`,
+        iconSize: [0, 0],
+      });
+      const m = L.marker([p.lat, p.lng], { icon, riseOnHover: true }).addTo(map);
+      m.bindPopup(`
+        <div class="pop">
+          ${imgOrPh(p)}
+          <div class="body">
+            <span class="badge ${p.status === "Coming Soon" ? "soon" : ""}">${p.status}</span>
+            <h4>${p.name}</h4>
+            <p>${p.typeLabel} · ${p.beds} bed · from ${fmtMoney(p.priceFrom)}/mo</p>
+            <a class="btn" href="${url(p)}">View property →</a>
+          </div>
+        </div>`, { offset: [0, -34], closeButton: false, autoPanPadding: [30, 30] });
+      m.on("popupopen", () => highlight(p.slug, true));
+      m.on("popupclose", () => highlight(p.slug, false));
+      markers[p.slug] = m;
+    });
+
+    function highlight(slug, on) {
+      document.querySelectorAll(`[data-slug="${slug}"]`).forEach((el) => el.classList.toggle(el.classList.contains("card") ? "active" : "on", on));
+    }
+
+    function render(filter) {
+      const shown = props.filter((p) => filter === "all" || p.type === filter);
+      document.getElementById("count").textContent = `${shown.length} ${shown.length === 1 ? "property" : "properties"}`;
+      document.getElementById("list").innerHTML = shown.map((p) => `
+        <a class="card" data-slug="${p.slug}" href="${url(p)}">
+          <div class="thumb ${p.hero ? "" : "ph"}" style="${p.hero ? `background-image:url('${p.hero}')` : ""}">${p.hero ? "" : "Coming soon"}</div>
+          <div>
+            <span class="badge ${p.status === "Coming Soon" ? "soon" : ""}">${p.status}</span>
+            <h3>${p.name}</h3>
+            <div class="addr">${p.neighbourhood}</div>
+            <div class="meta"><span>${p.beds} bd</span><span>${p.baths} ba</span><span>${p.sqft} sq ft</span></div>
+            <div class="price">From ${fmtMoney(p.priceFrom)}/mo</div>
+          </div>
+        </a>`).join("");
+      props.forEach((p) => {
+        const visible = shown.includes(p);
+        const m = markers[p.slug];
+        if (visible && !map.hasLayer(m)) m.addTo(map);
+        if (!visible && map.hasLayer(m)) map.removeLayer(m);
+      });
+      document.querySelectorAll(".card").forEach((c) => {
+        const m = markers[c.dataset.slug];
+        c.addEventListener("mouseenter", () => highlight(c.dataset.slug, true));
+        c.addEventListener("mouseleave", () => { if (!m.isPopupOpen()) highlight(c.dataset.slug, false); });
+      });
+      if (shown.length) map.fitBounds(L.latLngBounds(shown.map((p) => [p.lat, p.lng])).pad(0.35), { maxZoom: 14 });
+    }
+
+    document.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      render(b.dataset.f);
+    }));
+    render("all");
+  </script>
+</body>
+</html>
